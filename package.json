@@ -1,0 +1,24 @@
+{
+  "name": "cursors-io-protocol",
+  "version": "1.0.0",
+  "description": "Cursors.io protocol",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index",
+    "dev": "nodemon"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vanflux/cursors-io-protocol.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vanflux/cursors-io-protocol/issues"
+  },
+  "homepage": "https://github.com/vanflux/cursors-io-protocol#readme",
+  "dependencies": {
+    "request": "^2.88.2",
+    "ws": "^7.4.6"
+  }
+}
