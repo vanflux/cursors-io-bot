@@ -1,10 +1,24 @@
 const WebSocket = require('ws');
-const ServerFinder = require('./serverFinder');
+const Bot = require('./bot');
 
 async function main() {
-    let svFinder = new ServerFinder();
-    let servers = await svFinder.findServerPreference('latency');
-    console.log(servers);
+    let bot = new Bot();
+    await bot.setup();
+    await bot.connect();
+
+    let aux = false;
+    bot.on('scene load', () => {
+        if (aux) {
+            bot.moveCursor(bot.cursorX + 50, bot.cursorY, true);
+            bot.click();
+            return;
+        }
+        aux = true;
+
+        let goodObj = bot.sceneObjs.find(x => x.type == 2 && x.isBad == false);
+
+        bot.moveCursor(goodObj.x, goodObj.y);
+    });
 }
 
 main();
