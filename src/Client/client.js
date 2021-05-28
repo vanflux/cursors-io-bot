@@ -14,13 +14,12 @@ module.exports = class Client extends EventEmitter {
         this.cursorId = -1;
         this.areaCursorCount = 0;
         this.levelLoadCount = 0;
+        this.lastCursorMoveTime = 0;
         this.cursorX = 0;
         this.cursorY = 0;
         this.cursors = {};
         this.playersCount = 0;
         this.drawings = [];
-        this.lastDrawCX = 0;
-        this.lastDrawCY = 0;
         this.K = [];
     }
 
@@ -64,6 +63,7 @@ module.exports = class Client extends EventEmitter {
         dataView.setUint16(5, x, true);
         dataView.setUint16(7, y, true);
         await this.socket.send(buffer);
+        this.lastCursorMoveTime = Date.now();
         this.cursorX = x;
         this.cursorY = y;
     }

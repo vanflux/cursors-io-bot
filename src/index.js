@@ -5,38 +5,34 @@ async function main() {
     let bot = new Bot();
     await bot.setup();
     await bot.connect();
+    let bot2 = new Bot();
+    await bot2.setup();
+    await bot2.connect();
+
+    let x = 200;
+    let y = 182;
 
     bot.on('level load', async () => {
         if (bot.getLevelLoadCount() != 2) return;
 
-        let [hb] = await bot.search('hoverBtn');
-        await bot.navigateTo(hb.x, hb.y);
+        await bot.navigateTo(x, y);
+        while(true) {
+            await bot.goTo(x+8, y+2);
+            await bot.drawText('vanflux');
+            await bot.goTo(x, y);
+            await bot.drawRect(58, 17);
+        }
+    });
+    bot2.on('level load', async () => {
+        if (bot2.getLevelLoadCount() != 2) return;
 
-        let bot2 = new Bot();
-        await bot2.setup();
-        await bot2.connect();
-        
-        bot2.on('level load', async () => {
-            switch (bot2.getLevelLoadCount()) {
-                case 2: {
-                    let [ge] = await bot2.search('green');
-                    await bot2.navigateTo(ge.x, ge.y);
-                    break;
-                }
-                case 3: {
-                    let curX = bot2.getX();
-                    let curY = bot2.getY();
-
-                    let i = 0;
-                    while(true) {
-                        await bot2.goTo(curX + 20 * Math.cos(i), curY + 20 * Math.sin(i), true);
-                        i += 0.2;
-                        await bot2.click();
-                        await utils.sleep(100);
-                    }
-                }
-            }
-        });
+        await bot2.navigateTo(x, y);
+        while(true) {
+            await bot2.goTo(x+3, y+12);
+            await bot2.drawText('bot on github', 1, 1);
+            await bot2.goTo(x, y);
+            await bot2.drawRect(58, 17);
+        }
     });
 }
 

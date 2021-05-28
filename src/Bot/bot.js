@@ -1,6 +1,8 @@
 const Client = require('../Client/client');
 const pathfinder = require('./pathfinder');
+const letters = require('./letters');
 const { EventEmitter } = require('events');
+const utils = require('../utils');
 
 module.exports = class Bot extends EventEmitter {
     constructor(opts) {
@@ -70,6 +72,73 @@ module.exports = class Bot extends EventEmitter {
 
     async click() {
         await this.client.click();
+    }
+
+    async drawChar(char, size=1) {
+        let initialX = this.client.getCursorX();
+        let initialY = this.client.getCursorY();
+        let curX = this.client.getCursorX();
+        let curY = this.client.getCursorY();
+
+        if (!letters[char.toUpperCase()]) throw new Error('This char doesnt exist');
+        let { paths, width, height } = letters[char.toUpperCase()];
+
+        for (let path of paths) {
+            if (path.length == 0) break;
+            let firstPos = path[0];
+            curX = this.client.getCursorX();
+            curY = this.client.getCursorY();
+            if (this.client.lastCursorMoveTime > 50 || firstPos.x != 0 || firstPos.y != 0) {
+                this.client.moveCursor(initialX+firstPos.x*size, initialY+firstPos.y*size, false);
+                await utils.sleep(50);
+            }
+            for (let i = 0; i < path.length; i++) {
+                let pos = path[i];
+                curX = this.client.getCursorX();
+                curY = this.client.getCursorY();
+                if (initialX+pos.x != curX || initialY+pos.y != curY) {
+                    this.client.moveCursor(initialX+pos.x*size, initialY+pos.y*size, true);
+                    await utils.sleep(50);
+                }
+            }
+        }
+
+        return { width, height };
+    }
+
+    async drawText(text, size=2, spacing=3) {
+        let initialX = this.client.getCursorX();
+        let initialY = this.client.getCursorY();
+        let curX = this.client.getCursorX();
+        let curY = this.client.getCursorY();
+
+        for (let char of text) {
+            let { width } = await this.drawChar(char, size);
+            curX += width + spacing;
+            this.client.moveCursor(curX, curY, false);
+            await utils.sleep(50);
+        }
+        let totalWidth = curX-initialX;
+        let totalHeight = curX-initialY;
+        return { width: totalWidth, height: totalHeight };
+    }
+
+    async drawRect(width, height) {
+        let curX = this.client.getCursorX();
+        let curY = this.client.getCursorY();
+
+        if (this.client.lastCursorMoveTime > 50) {
+            this.client.moveCursor(curX, curY, false);
+            await utils.sleep(50);
+        }
+        this.client.moveCursor(curX+width, curY, true);
+        await utils.sleep(50);
+        this.client.moveCursor(curX+width, curY+height, true);
+        await utils.sleep(50);
+        this.client.moveCursor(curX, curY+height, true);
+        await utils.sleep(50);
+        this.client.moveCursor(curX, curY, true);
+        await utils.sleep(50);
     }
 
     getLevelLoadCount() {
