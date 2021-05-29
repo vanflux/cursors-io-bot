@@ -1,12 +1,13 @@
 # cursors-io-bot
 Cursors.io bot
 
-In Dev:
-- Protocol 99%
-
-Finished:
+- Protocol 100%
 - Pathfinder
 - Text writter
+
+2 Apps:
+- Vanflux (default, write a "brand" in level 1)
+- LevelUnlocker (unlock levels 1-14)
 
 ---------------
 
