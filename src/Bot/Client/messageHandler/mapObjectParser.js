@@ -3,6 +3,8 @@ const textParser = require('./textParser');
 module.exports = function mapObjectParser(client) {
     let parseText = textParser();
     return (dataView, curPos, out) => {
+        if (client.collisionMap == null) return;
+
         function parseTransforms() {
             out.x = dataView.getUint16(curPos, true); curPos += 2;
             out.y = dataView.getUint16(curPos, true); curPos += 2;
@@ -62,6 +64,19 @@ module.exports = function mapObjectParser(client) {
 
                 parseTransforms();
                 out.isBad = !!dataView.getUint8(curPos); curPos += 1;    // Is Bad ?
+
+                if (out.isBad) {
+                    let _x = out.x | 0;
+                    let _y = out.y | 0;
+                    let _w = out.width | 0;
+                    let _h = out.height | 0;
+                    for (let iy = _y; iy < _y + _h; iy++) {
+                        for (let ix = _x; ix < _x + _w; ix++) {
+                            client.collisionMap[ix + 400 * iy]++;
+                        }
+                    }
+                }
+
                 break;
             case 3:
                 // INTERACTABLE OBJECT
@@ -76,7 +91,7 @@ module.exports = function mapObjectParser(client) {
                 parseTransforms();
                 if (out.count) {
                     if (out.count > dataView.getUint16(curPos, true)) {
-                        out.lastClickAt = t; // Last Click
+                        out.lastClickAt = Date.now(); // Last Click
                     }
                 } else {
                     out.lastClickAt = 0; // Last Click = 0 (default)

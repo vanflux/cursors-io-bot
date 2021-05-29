@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 module.exports = (colMap, width, x, y) => {
     let height = Math.floor(colMap.length / width);
 
@@ -19,21 +21,31 @@ module.exports = (colMap, width, x, y) => {
                 heatMap[x + y * width] = value;
             }
 
-            let stack = [];
-            stack.push([0, dstX, dstY]);
+            let queue = [];
+            queue.push([0, dstX, dstY]);
 
-            while(stack.length > 0) {
-                let [heat, _x, _y] = stack.shift();
+            while(queue.length > 0) {
+                let [heat, _x, _y] = queue.shift();
                 
                 if (getHeatAt(_x, _y ) != -1 || getColAt(_x, _y) != 0) continue;
                 setHeatAt(_x, _y, heat);
-                stack.push([heat + 1, _x + 1, _y]);
-                stack.push([heat + 1, _x - 1, _y]);
-                stack.push([heat + 1, _x, _y + 1]);
-                stack.push([heat + 1, _x, _y - 1]);
+                queue.push([heat + 1, _x + 1, _y]);
+                queue.push([heat + 1, _x - 1, _y]);
+                queue.push([heat + 1, _x, _y + 1]);
+                queue.push([heat + 1, _x, _y - 1]);
             }
 
             return {
+                debugColMap: (filename) => {
+                    let str1 = '';
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            str1 += getColAt(x, y) + '\t';
+                        }
+                        str1 += '\n';
+                    }
+                    fs.writeFileSync(filename, str1);
+                },
                 from: (srcX, srcY) => {
                     let curX = srcX;
                     let curY = srcY;

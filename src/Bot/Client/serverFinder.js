@@ -49,7 +49,7 @@ module.exports = (opts) => {
                     let server = servers[region];
                     let host = isSecure ? (server.id + '.s.m28n.net') : (server.ipv4 || ('[' + server.ipv6 + ']'));
                     let protocol = isSecure ? 'wss://' : 'ws://';
-                    let socket = new WebSocket(protocol + host);
+                    let socket = new WebSocket(protocol + host, opts);
 
                     sockets.push(socket);
 

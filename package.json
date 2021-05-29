@@ -2,9 +2,9 @@
   "name": "cursors-io-protocol",
   "version": "1.0.0",
   "description": "Cursors.io protocol",
-  "main": "src/index.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node src/index",
+    "start": "node src/app",
     "dev": "nodemon"
   },
   "repository": {
@@ -19,6 +19,7 @@
   "homepage": "https://github.com/vanflux/cursors-io-protocol#readme",
   "dependencies": {
     "request": "^2.88.2",
+    "socks-proxy-agent": "^5.0.0",
     "ws": "^7.4.6"
   }
 }

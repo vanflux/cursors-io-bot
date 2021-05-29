@@ -10,7 +10,8 @@ module.exports = (client) => {
         // Set initial cursor position
         let x = dataView.getUint16(1, true);
         let y = dataView.getUint16(3, true);
-        client.setInitialCursor(x, y);
+        client.cursorX = x;
+        client.cursorY = y;
 
         // Parse scene objects
         let objCount = dataView.getUint16(5, true);
@@ -24,13 +25,14 @@ module.exports = (client) => {
             client.sceneObjs.push(obj);
         }
 
-        // Parse current level load count number
+        // Parse cursor server move count
         if (data.byteLength >= curPos + 4) {
-            client.levelLoadCount = Math.max(client.levelLoadCount, dataView.getUint32(curPos, true));
+            client.cursorServerMoveCount = Math.max(client.cursorServerMoveCount, dataView.getUint32(curPos, true));
         } else if (data.byteLength >= curPos + 2) {
-            client.levelLoadCount = Math.max(client.levelLoadCount, dataView.getUint16(curPos, true));
+            client.cursorServerMoveCount = Math.max(client.cursorServerMoveCount, dataView.getUint16(curPos, true));
         }
 
+        client.level++;
         client.emit('scene load');
         return curPos;
     };

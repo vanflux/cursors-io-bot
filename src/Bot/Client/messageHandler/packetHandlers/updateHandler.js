@@ -4,6 +4,8 @@ module.exports = (client) => {
     let parseMapObject = mapObjectParser(client);
 
     return (data, dataView, curPos) => {
+        if (client.collisionMap == null) return;
+        
         let cursorCount;
                 
         client.areaCursorCount = cursorCount = dataView.getUint16(1, true);
@@ -34,6 +36,7 @@ module.exports = (client) => {
                     cursor.y = y;
                 } else {
                     client.cursors[id] = {
+                        id,
                         x,
                         y,
                     };
@@ -75,19 +78,18 @@ module.exports = (client) => {
             }
             curPos += 4;
         }
-        
-        //console.log(client.pointerClicks.length); // print current visible pointer clicks count
 
         let length = dataView.getUint16(curPos, true);
         curPos += 2;
         for (let i = 0; i < length; i++) {
             let sceneObj = null;
-            a: {
+            updateHandler_changedSceneObjs:
+            {
                 let id = dataView.getUint32(curPos, true);
                 for (j = 0; j < client.sceneObjs.length; j++) {
                     if (client.sceneObjs[j].id == id) {
                         sceneObj = client.sceneObjs[j];
-                        break a;
+                        break updateHandler_changedSceneObjs;
                     }
                 }
                 sceneObj = {
@@ -98,29 +100,43 @@ module.exports = (client) => {
             curPos += 4;
             curPos = parseMapObject(dataView, curPos, sceneObj);
         }
-        curPos = Fa(dataView, curPos);
+        curPos = processDrawings(dataView, curPos);
+        removeFinishedDrawings();
+
         if (data.byteLength < curPos + 4) return;
 
         client.playersCount = dataView.getUint32(curPos, true);
 
-        function Fa(dataView, curPos) {
-            setTimeout(function() {
+        function processDrawings(dataView, curPos) {
+            if (client.drawingsEnabled) {
                 for (var c = dataView.getUint16(curPos, true), d = 0; d < c; d++) {
-                    let f = dataView.getUint16(curPos + 2 + 8 * d, true);
-                    let e = dataView.getUint16(curPos + 4 + 8 * d, true);
-                    let h = dataView.getUint16(curPos + 6 + 8 * d, true);
-                    let g = dataView.getUint16(curPos + 8 + 8 * d, true);
-                    //console.log(f, e, h, g);
-                    /*client.drawings.push([
-                        f << 1,
-                        e << 1,
-                        h << 1,
-                        g << 1,
-                        Date.now(),
-                    ]);*/
+                    let x1 = dataView.getUint16(curPos + 2 + 8 * d, true);
+                    let y1 = dataView.getUint16(curPos + 4 + 8 * d, true);
+                    let x2 = dataView.getUint16(curPos + 6 + 8 * d, true);
+                    let y2 = dataView.getUint16(curPos + 8 + 8 * d, true);
+
+                    client.drawings.push({
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                        time: Date.now(),
+                    });
                 }
-            }, 50);
+            }
             return curPos + 2 + 8 * dataView.getUint16(curPos, true)
+        }
+
+        function removeFinishedDrawings() {
+            if (client.drawingsEnabled) {
+                for (let i = 0; i < client.drawings.length; i++) {
+                    let { time } = client.drawings[i];
+                    if (Date.now() - time > 8000) {
+                        client.drawings.splice(i, 1);
+                        i--;
+                    }
+                }
+            }
         }
 
         function processPointerClicks(curPos) {
@@ -132,15 +148,21 @@ module.exports = (client) => {
                     let x = dataView.getUint16(curPos + 2 + 4 * d, true);
                     let y = dataView.getUint16(curPos + 4 + 4 * d, true);
 
-                    for (let i = 0; i < client.K.length; i++) {
-                        var g = client.K[i];
-                        if (g[0] == x && g[1] == y) {
-                            client.K.splice(i, 1);
-                            continue forLoop_processPClicks;
+                    let cursor;
+                    let bestDist = 1000;
+                    Object.values(client.cursors).forEach(c => {
+                        let dist = Math.sqrt((c.x-x)*(c.x-x) + (c.y-y)*(c.y-y));
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            cursor = c;
                         }
-                    }
+                    });
 
-                    client.pointerClicks.push({ x, y, time: Date.now() });
+                    if (bestDist < 3) {
+                        let pointerClick = { cursor, x, y, time: Date.now() };
+                        client.pointerClicks.push(pointerClick);
+                        client.emit('click', pointerClick);
+                    }
                 }
             }).bind(client), 100);
 
