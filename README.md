@@ -1,17 +1,17 @@
-# cursors-io-bot
-Cursors.io bot
+# Cursors.io Bot
 
+![](level-unlocker.gif)
+
+## Implemented
 - Protocol 100%
 - Pathfinder
 - Text writter
 
-2 Apps:
+## Apps
 - Vanflux (default, write a "brand" in level 1)
 - LevelUnlocker (unlock levels 1-14)
 
----------------
-
-How I use ???
+## How I use ???
 
 - Install node.js (v14.16.0 +)
 - Clone this repo
