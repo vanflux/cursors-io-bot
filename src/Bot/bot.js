@@ -46,7 +46,7 @@ module.exports = class Bot extends EventEmitter {
                 unregisterEvents();
                 this.emit('disconnected');
 
-                if (this.autoReconnect && this.reconnectTries-- > 0) {
+                if (this.autoReconnect && this.reconnectTries-- != 0) {
                     await conn();
                 } else {
                     failed();
@@ -59,7 +59,7 @@ module.exports = class Bot extends EventEmitter {
                 this.ready = false;
                 unregisterEvents();
                 
-                if (this.autoReconnect && this.reconnectTries-- > 0) {
+                if (this.autoReconnect && this.reconnectTries-- != 0) {
                     await conn();
                 } else {
                     failed(err);

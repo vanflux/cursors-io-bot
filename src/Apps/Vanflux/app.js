@@ -20,7 +20,7 @@ module.exports = async function run() {
             console.log('Configure your agent manager with your proxies');
         }
 
-        let bot1 = new Bot({ drawingsEnabled: true, delay: 50, agent: null });      // Non proxy bot
+        let bot1 = new Bot({ drawingsEnabled: false, delay: 50, agent: null, reconnectTries: -1 });      // Non proxy bot
         
         let trigger = new Trigger(brandX, brandY, brandWidth, brandHeight);
         bot1.on('click', obj => trigger.check(obj.x, obj.y, obj));
@@ -34,7 +34,7 @@ module.exports = async function run() {
         await bot1.connect();
 
 
-        let bot2 = new Bot({ drawingsEnabled: false, delay: 50, agent: null });     // Non proxy bot
+        let bot2 = new Bot({ drawingsEnabled: false, delay: 50, agent: null, reconnectTries: -1 });     // Non proxy bot
         setTimeout(maintainBrand(bot2), 3 * 1000);
         bot2.on('connected', () => console.log('Bot2 connected'));
         bot2.on('disconnected', () => console.log('Bot2 disconnected'));
@@ -44,7 +44,7 @@ module.exports = async function run() {
         if (runClicksBots) {
             // My proxies are terrible, this is the reason for DELAY = 80
 
-            let bot3 = new Bot({ drawingsEnabled: false, delay: 80, agent: agent1 });   // Proxied bot
+            let bot3 = new Bot({ drawingsEnabled: false, delay: 80, agent: agent1, reconnectTries: -1 });   // Proxied bot
             setTimeout(maintainClicks(bot3), 0 * 1000);
             bot3.on('connected', () => console.log('Bot3 connected'));
             bot3.on('disconnected', () => console.log('Bot3 disconnected'));
@@ -53,7 +53,7 @@ module.exports = async function run() {
             bot3.on('ready', () => console.log('Bot3 ready'));
             await bot3.connect();
 
-            let bot4 = new Bot({ drawingsEnabled: false, delay: 80, agent: agent1 });   // Proxied bot
+            let bot4 = new Bot({ drawingsEnabled: false, delay: 80, agent: agent1, reconnectTries: -1 });   // Proxied bot
             setTimeout(maintainClicksCount(bot4), 0 * 1000);
             bot4.on('connected', () => console.log('Bot4 connected'));
             bot4.on('disconnected', () => console.log('Bot4 disconnected'));
