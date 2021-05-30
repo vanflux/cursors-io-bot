@@ -18,6 +18,7 @@ module.exports = async function run() {
             let success = false;
             let bot;
             while(!success) {
+                console.log('Trying to create bot');
                 let agent = agentManager.nextAgent();
                 bot = new Bot({ delay: 80, agent });
                 try {

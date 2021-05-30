@@ -23,7 +23,7 @@ module.exports = class Client extends EventEmitter {
     resetInGameVariables() {
         this.tooFull = false;
 
-        this.level = 0;
+        this.level = -1;
 
         this.cursorId = null;
         this.cursorX = 0;
@@ -70,6 +70,7 @@ module.exports = class Client extends EventEmitter {
     }
 
     async disconnect() {
+        if (!this.socket) return;
         if (!this.connected) throw new Error('Already disconnected');
         if (this.disconnecting) throw new Error('Already disconnecting');
         this.disconnecting = true;
@@ -84,6 +85,7 @@ module.exports = class Client extends EventEmitter {
     }
 
     cleanupSocketEvents() {
+        if (!this.socket) return;
         this.socket.onopen = null;
         this.socket.onmessage = null;
         this.socket.onclose = null;
@@ -119,6 +121,7 @@ module.exports = class Client extends EventEmitter {
     }
 
     async moveCursor(x, y, drawing=false) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
         let buffer = new ArrayBuffer(9);
         let dataView = new DataView(buffer);
         dataView.setUint8(0, 3);
@@ -133,6 +136,7 @@ module.exports = class Client extends EventEmitter {
     }
 
     click() {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
         let buffer = new ArrayBuffer(9);
         let dataView = new DataView(buffer);
         dataView.setUint8(0, 2);

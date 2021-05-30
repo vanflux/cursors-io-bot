@@ -8,11 +8,16 @@ module.exports = class Bot extends EventEmitter {
     constructor(opts) {
         super();
 
-        let { delay } = Object.assign({
+        let { delay, autoReconnect, reconnectTries } = Object.assign({
             delay: 50,
+            autoReconnect: true,
+            reconnectTries: 5,
         }, opts);
 
         this.delay = delay;
+        this.autoReconnect = autoReconnect;
+        this.reconnectTries = reconnectTries;
+
         this.client = new Client(opts);
         this.lastClickTime = 0;
         this.connected = false;
@@ -24,37 +29,52 @@ module.exports = class Bot extends EventEmitter {
         if (this.connected) throw new Error('Already connected');
         if (this.connecting) throw new Error('Already connecting...');
         this.connecting = true;
+        this.ready = false;
         
         return new Promise(async (resolve, reject) => {
             let onConnectedHandler = async () => {
                 this.emit('connected');
                 this.connected = true;
                 this.connecting = false;
+                this.ready = false;
             };
             
             let onDisconnectedHandler = async () => {
                 this.connected = false;
                 this.connecting = false;
+                this.ready = false;
                 unregisterEvents();
                 this.emit('disconnected');
 
-                failed();
+                if (this.autoReconnect && this.reconnectTries-- > 0) {
+                    await conn();
+                } else {
+                    failed();
+                }
             };
 
             let onErrorHandler = async (err) => {
                 this.connected = false;
                 this.connecting = false;
+                this.ready = false;
                 unregisterEvents();
-                failed(err);
+                
+                if (this.autoReconnect && this.reconnectTries-- > 0) {
+                    await conn();
+                } else {
+                    failed(err);
+                }
             };
             
             let onSceneLoadHandler = async () => {
-                if (this.getLevel() == 1) {
+                if (this.getLevel() == 0) {
                     // Skip Welcome Scene / Level
                     let [ green ] = this.search('green');
-                    this.goTo(green.x, green.y);
+                    await this.navigateTo(green);
                     this.emit('welcome level load');
-                } else if (this.getLevel() == 2) {
+                } else if (this.getLevel() == 1) {
+                    this.ready = true;
+                    this.emit('ready');
                     this.emit('level load');
                     success();
                 } else {
@@ -96,12 +116,17 @@ module.exports = class Bot extends EventEmitter {
                 reject(err);
             };
             
-            try {
-                registerEvents();
-                await this.client.connect();
-            } catch (exc) {
-                onErrorHandler(exc);
+            let conn = async () => {
+                this.connecting = true;
+                try {
+                    registerEvents();
+                    await this.client.connect();
+                } catch (exc) {
+                    onErrorHandler(exc);
+                }
             }
+
+            await conn();
         });
     }
 
@@ -109,6 +134,7 @@ module.exports = class Bot extends EventEmitter {
         if (!this.connected) throw new Error('Already disconnected');
         if (this.disconnecting) throw new Error('Already disconnecting');
         this.disconnecting = true;
+        this.ready = false;
         while (this.connecting) await utils.sleep(100);
         
         return new Promise(async (resolve, reject) => {            
@@ -164,57 +190,69 @@ module.exports = class Bot extends EventEmitter {
     async navigateToCoord(x, y) {
         if (x < 0 || y < 0 || x >= this.getMapWidth() || y >= this.getMapHeight()) return false;
 
+        let level = this.getLevel();
+        
         while(true) {
-            let level = this.getLevel();
+            let width = this.getMapWidth();
+            let collisionMap = this.client.getCollisionMap();
 
-            try {
-                let width = this.getMapWidth();
-                let collisionMap = this.client.getCollisionMap();
+            if (collisionMap != null) {
+                try {
+                    if (collisionMap[x + y * width] > 0) return false;
+                    
+                    let pathfindToXY = pathfinder(collisionMap, width).to(x, y);
+                    let pathfind = pathfindToXY.from(this.getX(), this.getY());
 
-                if (collisionMap[x + y * width] > 0) return false;
-                
-                let curX = this.getX();
-                let curY = this.getY();
-                
-                let pathfindToXY = pathfinder(collisionMap, width).to(x, y);
-                let pathfind = pathfindToXY.from(curX, curY);
+                    if (pathfind == null) throw new Error('No path found from ' + this.getX() + ', ' + this.getY() + ' to ' + x + ', ' + y);
+                    let pos = pathfind.next();
 
-                if (pathfind == null) throw new Error('No path found from ' + curX + ', ' + curY + ' to ' + x + ', ' + y);
-                let pos = pathfind.next();
+                    while(true) {
+                        let navStartTime = Date.now();
+                        while(pos != null && (this.getX() != x || this.getY() != y)) {
+                            if (level != this.getLevel()) return true;
+                            if (navStartTime <= this.getLastAutorizativeSetCursorPosTime()) break;
 
-                while(true) {
-                    let navStartTime = Date.now();
-                    while(pos != null && (curX != x || curY != y)) {
+                            await this.goTo(pos.x, pos.y, false);
 
-                        if (level != this.getLevel()) {
-                            return true;
+                            pathfind = pathfindToXY.from(this.getX(), this.getY());
+                            pos = pathfind.next();
                         }
-                        if (navStartTime <= this.getLastAutorizativeSetCursorPosTime()) break;
+                        if (await this.tryWaitAutoritativeSetCursorPos(1000)) {
+                            await utils.sleep(100);
+                        } else {
+                            break;
+                        }
+                    };
 
-                        await this.goTo(pos.x, pos.y, false);
-
-                        curX = this.getX();
-                        curY = this.getY();
-                        pathfind = pathfindToXY.from(curX, curY);
-                        pos = pathfind.next();
+                    let reached = this.getX() == x && this.getY() == y;
+                    if (reached) {
+                        return true;
                     }
-                    if (await this.tryWaitAutoritativeSetCursorPos()) {
-                        await utils.sleep(100);
-                    } else {
-                        break;
-                    }
-                };
-
-                let reached = curX == x && curY == y;
-                if (reached) {
-                    return true;
+                } catch (exc) {
+                    // Navigation error
+                    // console.error('Nav error', exc);
                 }
-            } catch (exc) {
-                // Navigation error
-                // console.error('Nav error', exc);
             }
+
             await utils.sleep(1000);
         }
+    }
+
+    async waitReady(timeout=10000) {
+        if (this.ready) return;
+        return new Promise((resolve, reject) => {
+            let tid = setTimeout(() => {
+                this.off('ready', handler);
+                reject(new Error('Timeout'));
+            }, timeout);
+
+            let handler = (...args) => {
+                clearTimeout(tid);
+                resolve(...args);
+            };
+
+            this.once('ready', handler);
+        });
     }
 
     async waitLevelLoad(timeout=60000) {
@@ -251,7 +289,7 @@ module.exports = class Bot extends EventEmitter {
 
     async tryWaitAutoritativeSetCursorPos(timeout=1000) {
         try {
-            return await this.waitAutoritativeSetCursorPos(timeout=1000);
+            return await this.waitAutoritativeSetCursorPos(timeout);
         } catch (exc) {
             return null;
         }
@@ -328,6 +366,10 @@ module.exports = class Bot extends EventEmitter {
         return this.getDrawings().filter(drawing =>
             drawing.x1 >= x && drawing.x2 < x + width && drawing.y1 >= y && drawing.y2 < y + height
         );
+    }
+
+    isReady() {
+        return this.ready;
     }
 
     // Wrap basic functions of client
