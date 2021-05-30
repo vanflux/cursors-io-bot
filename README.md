@@ -1,6 +1,8 @@
 # Cursors.io Bot
 
-![](level-unlocker.gif)
+<p align="center">
+  <img width="300" height="200" src="defaultapp.gif">
+</p>
 
 ## Implemented
 - Protocol 100%
@@ -18,3 +20,9 @@
 - Go to the directory that you cloned
 - Install the dependencies using "npm install" command
 - Run app with "npm run start" or "npm run dev"
+
+
+### Level Unlocker App:
+<p align="center">
+  <img width="600" height="400" src="level-unlocker.gif">
+</p>
