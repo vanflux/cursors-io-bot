@@ -26,3 +26,5 @@
 <p align="center">
   <img width="600" height="400" src="level-unlocker.gif">
 </p>
+
+Gifs Created with [EzGif](https://ezgif.com/)
