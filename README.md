@@ -1,4 +1,4 @@
-# Cursors.io Bot
+# Cursors.io Bot (The site is currently down 😔)
 
 <p align="center">
   <img width="300" height="200" src="defaultapp.gif">
